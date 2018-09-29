@@ -3,11 +3,12 @@
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011"
                  xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="RegionsWasher.9052138e-b641-4a33-af4f-19214d918c4a" Version="1.0" Language="en-US"
+        <Identity Id="RegionsWasher.1.0.1" Version="1.0.1" Language="en-US"
                   Publisher="Leonala Diantes" />
         <DisplayName>RegionsWasher</DisplayName>
         <Description xml:space="preserve">Visual Studio Extension to affect the appearance and behavior of regions in Visual Studio</Description>
         <MoreInfo>https://github.com/LeonalaDiantes/RegionsWasher</MoreInfo>
+        <ReleaseNotes>fixes finding the complete #region line; updates the text view immediately after option changes.</ReleaseNotes>
         <Icon>Logo.png</Icon>
         <PreviewImage>Options.png</PreviewImage>
         <Tags>Regions</Tags>
