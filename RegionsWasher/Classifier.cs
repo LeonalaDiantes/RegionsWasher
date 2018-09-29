@@ -27,7 +27,7 @@ namespace RegionsWasher
 
         public IList<ClassificationSpan> GetClassificationSpans(SnapshotSpan span)
         {
-            var findData = new FindData(@"(#region(\s+\S+)?)|(#endregion)", span.Snapshot)
+            var findData = new FindData(@"(#region((\s+\S+)+)?)|(#endregion)", span.Snapshot)
             {
                 FindOptions = FindOptions.UseRegularExpressions
             };
