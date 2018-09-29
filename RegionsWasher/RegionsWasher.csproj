@@ -67,10 +67,10 @@
     <Compile Include="Region.cs" />
     <Compile Include="Classifier.cs" />
     <Compile Include="ClassifierClassificationDefinition.cs" />
-    <Compile Include="ClassifierFormat.cs" />
     <Compile Include="ClassifierProvider.cs" />
     <Compile Include="SettingsPropertyAttribute.cs" />
     <Compile Include="RegionsHandler.cs" />
+    <Compile Include="TinyMessageBroker.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Key.snk" />

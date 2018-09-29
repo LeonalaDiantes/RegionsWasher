@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Xml;
 using Microsoft.VisualStudio.Settings;
@@ -56,13 +57,14 @@ namespace RegionsWasher
 
             var defaultBrush = new ImageBrush
             {
-                ImageSource = new DrawingImage { Drawing = new GeometryDrawing {Brush = Brushes.Gray, Geometry = Geometry.Parse("M 0,0 L 50,0 50,50 0,50 Z M 50,50 L 100,50 100,100 50,100 Z")} },
-                Stretch = Stretch.Fill,
+                ImageSource = new DrawingImage {Drawing = new GeometryDrawing {Brush = Brushes.Gray, Geometry = Geometry.Parse("M 0,0 L 50,0 50,50 0,50 Z M 50,50 L 100,50 100,100 50,100 Z")}},
+                Stretch = Stretch.Fill
             };
 
             var insertSpaceBeforeCapital = new Regex(@"(.*?\w)([A-Z])");
             DefinedColors = new dynamic[] {new {Name = "Default", Color = (Color?) null, Brush = defaultBrush}}
-                .Concat(typeof(Colors).GetProperties(BindingFlags.Public | BindingFlags.Static).Select(p => new {Name = insertSpaceBeforeCapital.Replace(p.Name, "$1 $2"), Color = p.GetValue(null), Brush = new SolidColorBrush((Color) p.GetValue(null))})
+                .Concat(typeof(Colors).GetProperties(BindingFlags.Public | BindingFlags.Static)
+                    .Select(p => new {Name = insertSpaceBeforeCapital.Replace(p.Name, "$1 $2"), Color = p.GetValue(null), Brush = new SolidColorBrush((Color) p.GetValue(null))})
                     .ToArray());
         }
 
@@ -109,6 +111,11 @@ namespace RegionsWasher
             get => size;
             set
             {
+                if (value < 1.0 || value > 99.0)
+                {
+                    throw new ArgumentException("the size must be in range: 1..99 or empty");
+                }
+
                 size = value;
                 OnPropertyChanged();
             }
@@ -265,6 +272,8 @@ namespace RegionsWasher
 
                 settingsStore.SetString(CollectionPath, property.Name, storeValue);
             }
+
+            TinyMessageBroker.Instance.Publish(this);
         }
 
         private bool GetSettingsStore(out WritableSettingsStore settingsStore)

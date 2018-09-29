@@ -134,12 +134,21 @@
                         Grid.Row="3"
                         Grid.Column="0"
                         Text="Font Size" />
-                    <TextBox
+                    <StackPanel
                         Grid.Row="3"
                         Grid.Column="1"
-                        Width="100"
-                        PreviewTextInput="OnSizePreviewTextInput"
-                        Text="{Binding Size, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource NullableDoubleConverter}}" />
+                        Orientation="Horizontal">
+                        <TextBox
+                            Name="SizeTextBox"
+                            Width="100"
+                            Text="{Binding Size, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource NullableDoubleConverter}, ValidatesOnExceptions=True}" />
+                        <TextBlock
+                            Margin="10,0,0,0"
+                            VerticalAlignment="Center"
+                            FontStyle="Italic"
+                            Foreground="Red"
+                            Text="{Binding ElementName=SizeTextBox, Path=(Validation.Errors)[0].ErrorContent}" />
+                    </StackPanel>
                 </Grid>
                 <StackPanel Orientation="Horizontal">
                     <CheckBox IsChecked="{Binding IsItalic, UpdateSourceTrigger=PropertyChanged}">Italic</CheckBox>

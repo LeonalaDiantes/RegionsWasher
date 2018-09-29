@@ -1,24 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
-using System.Xml.Xsl;
-using Microsoft;
-using Microsoft.VisualStudio.Settings;
 using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Shell.Settings;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Outlining;
-using Microsoft.VisualStudio.Text.Tagging;
-using Microsoft.VisualStudio.Threading;
 using Microsoft.VisualStudio.Utilities;
 
 namespace RegionsWasher
@@ -26,16 +13,19 @@ namespace RegionsWasher
     [Export(typeof(IWpfTextViewCreationListener))]
     [TextViewRole(PredefinedTextViewRoles.Structured)]
     [ContentType("CSharp")]
-    internal class RegionsHandler : IWpfTextViewCreationListener
+    internal class RegionsHandler : IWpfTextViewCreationListener, ITinySubscriber<Settings>
     {
         private IOutliningManager outliningManager;
-        private IWpfTextView textView;
         private Settings settings;
-
+        private IWpfTextView textView;
 #pragma warning disable CS0649
 
         [Import(typeof(IOutliningManagerService))]
         private IOutliningManagerService outliningManagerService;
+
+        [Import] private IClassificationFormatMapService classificationFormatMapService;
+
+        [Import] private IClassificationTypeRegistryService classificationTypeRegistryService;
 
 #pragma warning disable CS0649
 
@@ -43,13 +33,13 @@ namespace RegionsWasher
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            this.textView = wpfTextView;
+            textView = wpfTextView;
 
             settings = new Settings();
             settings.LoadFromStore();
 
-            this.textView.Closed += OnClosed;
-            outliningManager = outliningManagerService.GetOutliningManager(this.textView);
+            textView.Closed += OnClosed;
+            outliningManager = outliningManagerService.GetOutliningManager(textView);
 
             if (settings.BehaviorMode != BehaviorMode.DoNothing)
             {
@@ -59,14 +49,16 @@ namespace RegionsWasher
             if (settings.BehaviorMode == BehaviorMode.PreventCollapse)
             {
                 outliningManager.RegionsCollapsed += OnRegionsCollapsed;
-            }            
+            }
+
+            TinyMessageBroker.Instance.Subscribe(this);
         }
 
         private void OutliningManagerOnRegionsChanged(object sender, RegionsChangedEventArgs args)
         {
             outliningManager.RegionsChanged -= OutliningManagerOnRegionsChanged;
 
-            var currentSnapshot = this.textView.TextBuffer.CurrentSnapshot;
+            var currentSnapshot = textView.TextBuffer.CurrentSnapshot;
             var span = new SnapshotSpan(currentSnapshot, 0, currentSnapshot.Length);
 
             if (settings.BehaviorMode == BehaviorMode.ExpandAll || settings.BehaviorMode == BehaviorMode.PreventCollapse)
@@ -84,7 +76,10 @@ namespace RegionsWasher
             if (outliningManager != null)
             {
                 outliningManager.RegionsCollapsed -= OnRegionsCollapsed;
+                outliningManager.RegionsChanged -= OutliningManagerOnRegionsChanged;
             }
+
+            TinyMessageBroker.Instance.Unsubscribe(this);
 
             textView.Closed -= OnClosed;
         }
@@ -99,8 +94,26 @@ namespace RegionsWasher
 
         private static bool IsRegion(ICollapsible collapsible)
         {
-            string text = collapsible.Extent.GetText(collapsible.Extent.TextBuffer.CurrentSnapshot);
+            var text = collapsible.Extent.GetText(collapsible.Extent.TextBuffer.CurrentSnapshot);
             return text.TrimStart().ToLowerInvariant().StartsWith("#region");
+        }
+
+        public void Receive(Settings settings)
+        {
+            if (textView != null && !textView.IsClosed)
+            {
+                var classificationFormatMap = classificationFormatMapService.GetClassificationFormatMap(textView);
+
+                classificationFormatMap.BeginBatchUpdate();
+
+                ClassifierForegroundFormat.UpdateTextProperties(classificationTypeRegistryService, classificationFormatMap, settings);
+                ClassifierBackgroundFormat.UpdateTextProperties(classificationTypeRegistryService, classificationFormatMap, settings);
+                ClassifierIsItalicFormat.UpdateTextProperties(classificationTypeRegistryService, classificationFormatMap, settings);
+                ClassifierIsBoldFormat.UpdateTextProperties(classificationTypeRegistryService, classificationFormatMap, settings);
+                ClassifierFontRenderingFormat.UpdateTextProperties(classificationTypeRegistryService, classificationFormatMap, settings);
+
+                classificationFormatMap.EndBatchUpdate();
+            }
         }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Classification;
@@ -10,15 +9,17 @@ namespace RegionsWasher
 {
     internal class Classifier : IClassifier
     {
-        private readonly IClassificationType classificationType;
+        public const string Key = "Region";
+        //private readonly IClassificationType classificationType;
+        private readonly IClassificationTypeRegistryService registryService;
         private readonly ITextSearchService textSearchService;
 
-        internal Classifier(IClassificationTypeRegistryService registry, ITextSearchService textSearchService)
+        internal Classifier(IClassificationTypeRegistryService registryService, ITextSearchService textSearchService)
         {
+            this.registryService = registryService;
             this.textSearchService = textSearchService;
-            classificationType = registry.GetClassificationType("RegionClassifier");
+            //classificationType = registry.GetClassificationType("RegionClassifier");
         }
-
 #pragma warning disable CS0067
 
         public event EventHandler<ClassificationChangedEventArgs> ClassificationChanged;
@@ -32,9 +33,22 @@ namespace RegionsWasher
                 FindOptions = FindOptions.UseRegularExpressions
             };
 
-            textSearchService.FindAll(findData);
+            var snapshotSpans = textSearchService.FindAll(findData).ToArray();
 
-            var result = textSearchService.FindAll(findData).Select(sp => new ClassificationSpan(sp, classificationType)).ToList();
+            var classificationForegroundType = registryService.GetClassificationType(ClassifierForegroundFormat.ClassifierKey);
+            var classificationBackgroundType = registryService.GetClassificationType(ClassifierBackgroundFormat.ClassifierKey);
+            var classificationIsItalicType = registryService.GetClassificationType(ClassifierIsItalicFormat.ClassifierKey);
+            var classificationIsBoldType = registryService.GetClassificationType(ClassifierIsBoldFormat.ClassifierKey);
+            var classificationFontRenderingType = registryService.GetClassificationType(ClassifierFontRenderingFormat.ClassifierKey);
+
+            var result = snapshotSpans.Select(sp => new ClassificationSpan(sp, classificationForegroundType))
+                .Union(snapshotSpans.Select(sp => new ClassificationSpan(sp, classificationBackgroundType)))
+                .Union(snapshotSpans.Select(sp => new ClassificationSpan(sp, classificationIsItalicType)))
+                .Union(snapshotSpans.Select(sp => new ClassificationSpan(sp, classificationIsBoldType)))
+                .Union(snapshotSpans.Select(sp => new ClassificationSpan(sp, classificationIsBoldType)))
+                .Union(snapshotSpans.Select(sp => new ClassificationSpan(sp, classificationFontRenderingType)))
+                .ToList();
+
             return result;
         }
     }

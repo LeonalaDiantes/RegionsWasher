@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using System.Windows;
 using System.Windows.Data;
 
 namespace RegionsWasher
@@ -24,7 +25,12 @@ namespace RegionsWasher
                 return null;
             }
 
-            return double.Parse(text);
+            if (double.TryParse(text, out double result))
+            {
+                return result;
+            }
+
+            return DependencyProperty.UnsetValue;
         }
     }
 }
